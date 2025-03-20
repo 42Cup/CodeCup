@@ -14,23 +14,26 @@ Code Cup ☕ is a lightweight Git repository management tool designed to simplif
 - **Window Toggle**: Press the "Cl" button to collapse the window to a compact size (75x50) and back.
 - **GitHub Auth**: Log in/out of GitHub and see your auth status live in the UI.
 
-```markdown
+
 Requirements: Python 3.x, Tkinter (usually included with Python), subprocess, json, os, shutil
 
 Optional (for full GitHub functionality): Git and GitHub CLI (gh) installed and configured
 
 ## 🛠️ Setup (virtual environment)
+```
    Clone or download this repository (git clone https://github.com/42Cup/Code-Cup).
    cd Code-Cup
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt  # If a requirements.txt is added later
    python ui.py
-
+```
 ## No virtual environment
+```
    Clone or download this repository (git clone https://github.com/42Cup/Code-Cup).
    cd Code-Cup
    python ui.py
+```
 
 ## 📋 Example Usage
 1. Enter a directory path (e.g., `/home/user/projects`) in the entry field and press Enter.
