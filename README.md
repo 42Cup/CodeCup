@@ -1,5 +1,3 @@
-### README
-```
 ## 🚀 Overview
 Code Cup ☕ is a lightweight Git repository management tool designed to simplify your workflow with Git and GitHub. Built with Python and Tkinter, it offers an intuitive interface for managing repositories, branches, and GitHub visibility right from your desktop.
 
@@ -39,7 +37,6 @@ Optional (for full GitHub functionality): Git and GitHub CLI (gh) installed and 
 2. Select a repository from the list to see its Git status.
 3. Use buttons like "New Repo" or "Save Branch" to manage your projects.
 4. Right-click a repo for advanced options like zipping a branch or renaming it.
-```
 
 ## 🤝 Contributing
 Feel free to fork, tweak, and enhance Code Cup ☕! Pull requests are welcome—let's brew something great together!
