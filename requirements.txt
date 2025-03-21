@@ -1,0 +1,46 @@
+# Developed with Python 3.11.2
+
+# Core Requirements
+# (No external Python packages are strictly required since Tkinter and other dependencies are in Python's standard library)
+
+# Optional Enhancements
+pyperclip>=1.8.2  # For clipboard functionality (e.g., copying repo links), if extended later
+# Add more optional packages here if you expand the project (e.g., requests for API calls)
+
+# Note: For full GitHub integration, install these system tools separately:
+# - Git (https://git-scm.com/downloads)
+# - GitHub CLI (gh) (https://cli.github.com/)
+
+# Core Requirements
+# (No external Python packages are strictly required since Tkinter and other dependencies are in Python's standard library)
+
+# Optional Enhancements
+pyperclip>=1.8.2  # For clipboard functionality (e.g., copying repo links), if extended later
+
+# Note: For full GitHub integration, install these system tools separately:
+# - Git (https://git-scm.com/downloads)
+#   - Debian:
+#     1. Open a terminal.
+#     2. Update package list: `sudo apt update`
+#     3. Install Git: `sudo apt install git`
+#     4. Verify installation: `git --version`
+#   - Fedora:
+#     1. Open a terminal.
+#     2. Update package list: `sudo dnf update`
+#     3. Install Git: `sudo dnf install git`
+#     4. Verify installation: `git --version`
+
+# - GitHub CLI (gh) (https://cli.github.com/)
+#   - Debian:
+#     1. Open a terminal.
+#     2. Add GitHub’s APT key: `curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg`
+#     3. Set key permissions: `sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg`
+#     4. Add GitHub CLI repository: `echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null`
+#     5. Update package list: `sudo apt update`
+#     6. Install GitHub CLI: `sudo apt install gh`
+#     7. Verify installation: `gh --version`
+#   - Fedora:
+#     1. Open a terminal.
+#     2. Add GitHub CLI repository: `sudo dnf config-manager --add-repo https://cli.github.com/packages/rpm/gh-cli.repo`
+#     3. Install GitHub CLI: `sudo dnf install gh`
+#     4. Verify installation: `gh --version`

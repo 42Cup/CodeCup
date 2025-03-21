@@ -1,49 +1,45 @@
-
-
-
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 from state_manager import set_initial_state, on_close
 from color_manager import start_color_drag, update_color
 from constants import *
 from logic import *
+from logic import center_window_on_parent
 from repo_manager import *
 
 def show_context_menu(event, globals_dict):
     selection = globals_dict['treeview'].identify_row(event.y)
-    if not selection:
-        return
+    if not selection: return
     
     globals_dict['treeview'].selection_set(selection)
-    selected_item = globals_dict['treeview'].item(selection)["values"][0]  # Use values[0] instead of text
+    selected_item = globals_dict['treeview'].item(selection)["values"][0]
     base_path = globals_dict['entry'].get().strip()
     full_path = os.path.join(base_path, selected_item)
     
-    # Load repo status to determine visibility
     from logic import load_repo_status, update_treeview
     repo_status = load_repo_status()
     is_private = repo_status.get(full_path, False)
 
-    globals_dict['context_menu'] = tk.Menu(globals_dict['root'], tearoff=0)
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label=f"     {selected_item}     ", font=("Helvetica", 11, "bold"), foreground="red", command=lambda: None)  # Bold simulation
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label="Branch 2 New Repo", command=lambda: branch_to_new_repo(base_path, selected_item, full_path, globals_dict))
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label=".Zip Branch", command=lambda: zip_from_branch(base_path, selected_item, full_path, globals_dict))
-    globals_dict['context_menu'].add_command(label="Repo Link", command=lambda: copy_repo_link(globals_dict, selected_item))
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label="Open Directory", command=lambda: open_directory(full_path))
-    globals_dict['context_menu'].add_command(label="Claude Code", command=lambda: run_claude_code(full_path, base_path))
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label="🌍 GO PUBLIC", command=lambda: go_public(globals_dict, selected_item, full_path))
-    globals_dict['context_menu'].add_command(label="🔒 GO PRIVATE", command=lambda: go_private(globals_dict, selected_item, full_path))
-    globals_dict['context_menu'].add_separator()
-    globals_dict['context_menu'].add_command(label="RENAME", command=lambda: rename_repo(globals_dict, selected_item, base_path, full_path))
-    globals_dict['context_menu'].add_command(label="DELETE", command=lambda: confirm_delete(globals_dict, selected_item))
-    globals_dict['context_menu'].add_separator()
+    cm = globals_dict['context_menu'] = tk.Menu(globals_dict['root'], tearoff=0)
+    cm.add_separator()
+    cm.add_command(label=f"     {selected_item}     ", font=("Helvetica", 11, "bold"), foreground="red", command=lambda: None)
+    cm.add_separator()
+    cm.add_command(label="Branch 2 New Repo", command=lambda: branch_to_new_repo(base_path, selected_item, full_path, globals_dict))
+    cm.add_separator()
+    cm.add_command(label=".Zip Branch", command=lambda: zip_from_branch(base_path, selected_item, full_path, globals_dict))
+    cm.add_command(label="Repo Link", command=lambda: copy_repo_link(globals_dict, selected_item))
+    cm.add_separator()
+    cm.add_command(label="Open Directory", command=lambda: open_directory(full_path))
+    cm.add_command(label="Claude Code", command=lambda: run_claude_code(full_path, base_path))
+    cm.add_separator()
+    cm.add_command(label="🌍 GO PUBLIC", command=lambda: go_public(globals_dict, selected_item, full_path))
+    cm.add_command(label="🔒 GO PRIVATE", command=lambda: go_private(globals_dict, selected_item, full_path))
+    cm.add_separator()
+    cm.add_command(label="RENAME", command=lambda: rename_repo(globals_dict, selected_item, base_path, full_path))
+    cm.add_command(label="DELETE", command=lambda: confirm_delete(globals_dict, selected_item))
+    cm.add_separator()
 
-    globals_dict['context_menu'].post(event.x_root, event.y_root)
+    cm.post(event.x_root, event.y_root)
     globals_dict['menu_visible'] = True
     
 def dismiss_context_menu(event, globals_dict):
@@ -69,6 +65,74 @@ def toggle_window_size():
         root.geometry(f"{w}x{h}+{x}+{y}")
         globals_dict['is_toggled'] = False
 
+def update_auth_button():
+    from logic import get_gh_username
+    username = get_gh_username()
+    if username:
+        auth_button.config(text="Logout", command=lambda: logout_gh())
+    else:
+        auth_button.config(text="Login", command=lambda: login_gh())
+
+def logout_gh():
+    subprocess.run("gh auth logout", shell=True, cwd=os.getcwd())
+    auth_button.config(text="Login", command=lambda: login_gh())
+    current_branch = on_treeview_select(globals_dict['entry'], globals_dict['treeview'], 
+                                      globals_dict['text_editor'], globals_dict['auth_label'])
+    globals_dict['auth_label'].config(text=f"● {current_branch or 'No branch'} - You Are Not Logged In𝕏❌", fg="#FF0000")
+
+def login_gh():
+    from logic import show_gh_auth_status, CenteredDialog 
+    from tkinter import messagebox, Button, Label
+    import subprocess
+
+    full_command = f"xterm -e \"cd {os.getcwd()} && gh auth login && echo 'Press any key to close' && read -n 1\""
+    process = subprocess.Popen(full_command, shell=True)
+
+    class LoginConfirmDialog(CenteredDialog):
+        def __init__(self, parent, title, message):
+            self.message = message
+            self.result = None
+            super().__init__(parent, title)
+            
+        def body(self, master):
+            label = Label(master, text=self.message)
+            label.pack(pady=20, padx=20)
+            return label
+            
+        def buttonbox(self):
+            box = tk.Frame(self)
+            ok_button = tk.Button(box, text="Ok", width=10, command=self.ok)
+            ok_button.pack(side=tk.LEFT, padx=20, pady=10)
+            exit_button = tk.Button(box, text="Exit", width=10, command=self.cancel)
+            exit_button.pack(side=tk.RIGHT, padx=20, pady=10)
+            self.bind("<Return>", self.ok)
+            self.bind("<Escape>", self.cancel)
+            box.pack()
+            
+        def apply(self):
+            self.result = True
+
+    def check_login_status():
+        dialog = LoginConfirmDialog(globals_dict['root'], "Login Confirmation", 
+                                   "Complete login in the terminal, then press Ok")
+        if dialog.result:
+            post_login_check()
+
+    def post_login_check():
+        auth_status = show_gh_auth_status()
+        if "Logged in to github.com" in auth_status:
+            update_auth_button()
+            current_branch = on_treeview_select(globals_dict['entry'], globals_dict['treeview'], 
+                                              globals_dict['text_editor'], globals_dict['auth_label'])
+            globals_dict['auth_label'].config(text=f"● {current_branch or 'No branch'} - {auth_status}")
+        else:
+            retry_dialog = LoginConfirmDialog(globals_dict['root'], "Login Check", 
+                                             "Login failed or incomplete; Press Ok to check again")
+            if retry_dialog.result:
+                post_login_check()
+
+    globals_dict['root'].after(500, check_login_status)
+
 root = tk.Tk()
 root.title("Code Cup ☕")
 root.geometry("600x400")
@@ -90,86 +154,15 @@ entry.pack(side=tk.LEFT, fill=tk.X, expand=True)
 entry.bind("<Return>", lambda e: update_treeview(entry, treeview))
 
 treeview = ttk.Treeview(left_frame, show="tree", selectmode="browse", style="Custom.Treeview")
-treeview.pack(fill=tk.BOTH, expand=True, padx=2, pady=(10, 0))  # 10 adds gap at top
+treeview.pack(fill=tk.BOTH, expand=True, padx=2, pady=(10, 0))
 
-# Add button container frame at the bottom of left_frame
 bottom_button_frame = tk.Frame(left_frame, bg='white')
 bottom_button_frame.pack(fill=tk.X, padx=2, pady=(2, 2))
 
-# Row with two buttons (50% width each)
 top_row_frame = tk.Frame(bottom_button_frame)
 top_row_frame.pack(fill=tk.X)
-tk.Button(top_row_frame, text="Clone", command=lambda: CloneDialog(root, "Clone Repository", globals_dict)).pack(side=tk.LEFT, expand=True, fill=tk.X, padx=0, pady=0)
-tk.Button(top_row_frame, text="re4f.xyz").pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=0, pady=0)
-
-# Logout/Login button (100% width)
-def update_auth_button():
-    from logic import get_gh_username
-    username = get_gh_username()
-    if username:
-        auth_button.config(text="Logout", command=lambda: logout_gh())
-    else:
-        auth_button.config(text="Login", command=lambda: login_gh())
-
-def logout_gh():
-    from logic import run_in_xterm
-    # Run the logout command
-    subprocess.run("gh auth logout", shell=True, cwd=os.getcwd())
-    # run_in_xterm("gh auth logout", os.getcwd())
-    # Immediately update UI to logged-out state
-    auth_button.config(text="Login", command=lambda: login_gh())
-    current_branch = on_treeview_select(globals_dict['entry'], globals_dict['treeview'], 
-                                       globals_dict['text_editor'], globals_dict['auth_label'])
-    globals_dict['auth_label'].config(text=f"● {current_branch or 'No branch'} - You Are Not Logged In𝕏❌", fg="#FF0000")
-
-def login_gh():
-    from logic import show_gh_auth_status
-    from tkinter import messagebox, Toplevel, Button, Label
-    import subprocess
-
-    # Run gh auth login in a visible xterm window
-    full_command = f"xterm -e \"cd {os.getcwd()} && gh auth login && echo 'Press any key to close' && read -n 1\""
-    process = subprocess.Popen(full_command, shell=True)
-
-    # Custom dialog for login confirmation
-    def check_login_status():
-        dialog = Toplevel(globals_dict['root'])
-        dialog.title("Login Confirmation")
-        dialog.geometry("300x100")
-        Label(dialog, text="Complete login in the terminal, then press Ok").pack(pady=20)
-        ok_button = Button(dialog, text="Ok", command=lambda: post_login_check(dialog))
-        ok_button.pack(side="left", padx=20)
-        exit_button = Button(dialog, text="Exit", command=dialog.destroy)
-        exit_button.pack(side="right", padx=20)
-        dialog.transient(globals_dict['root'])
-        dialog.grab_set()
-        dialog.wait_window()
-
-    def post_login_check(prev_dialog):
-        prev_dialog.destroy()
-        auth_status = show_gh_auth_status()
-        if "Logged in to github.com" in auth_status:
-            # Update UI immediately if logged in
-            update_auth_button()
-            current_branch = on_treeview_select(globals_dict['entry'], globals_dict['treeview'], 
-                                              globals_dict['text_editor'], globals_dict['auth_label'])
-            globals_dict['auth_label'].config(text=f"● {current_branch or 'No branch'} - {auth_status}")
-        else:
-            # Show retry prompt if not logged in
-            retry_dialog = Toplevel(globals_dict['root'])
-            retry_dialog.title("Login Check")
-            retry_dialog.geometry("300x100")
-            Label(retry_dialog, text="Login failed or incomplete; Press Ok to check again").pack(pady=20)
-            ok_button = Button(retry_dialog, text="Ok", command=lambda: post_login_check(retry_dialog))
-            exit_button = Button(retry_dialog, text="Exit", command=retry_dialog.destroy)
-            ok_button.pack(side="left", padx=20)
-            exit_button.pack(side="right", padx=20)
-            retry_dialog.transient(globals_dict['root'])
-            retry_dialog.grab_set()
-            retry_dialog.wait_window()
-
-    # Wait briefly before showing the dialog to ensure the xterm window appears first
-    globals_dict['root'].after(500, check_login_status)
+tk.Button(top_row_frame, text="Clone", command=lambda: CloneDialog(root, "Clone Repository", globals_dict)).pack(side=tk.LEFT, expand=True, fill=tk.X)
+tk.Button(top_row_frame, text="re4f.xyz").pack(side=tk.RIGHT, expand=True, fill=tk.X)
 
 auth_button = tk.Button(left_frame, text="Checking...", command=lambda: None)
 auth_button.pack(fill=tk.X, padx=1, pady=1)
@@ -202,10 +195,10 @@ auth_label = tk.Label(right_frame, text="Checking GitHub auth...", bg='white', w
 auth_label.pack(fill=tk.X, pady=(0, 2))
 
 editor_frame = tk.Frame(right_frame, bg='white')
-editor_frame.pack(fill=tk.BOTH, expand=True)  # No pady here to avoid extra spacing
+editor_frame.pack(fill=tk.BOTH, expand=True)
 
 text_editor = tk.Text(editor_frame, wrap=tk.NONE, font=("Courier", 10))
-text_editor.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)  # Side LEFT to place scrollbar on right
+text_editor.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
 globals_dict = GLOBAL_DEFAULTS.copy()
 globals_dict.update({'root': root, 'main_paned': main_paned, 'left_frame': left_frame, 'entry_frame': entry_frame,
@@ -216,12 +209,12 @@ style = ttk.Style()
 style.configure("Custom.Treeview", font=("Courier", 12), rowheight=25, padding=[0, 0, 0, 0])
 globals_dict['style'] = style
 
-color_events = {
-    '<Button-1>': lambda e: None,  # Block single left-click drag
-    '<Button-3>': lambda e: None,  # Block single right-click drag
+color_events = { # GROK 3 WAS HERE
+    '<Button-1>': lambda e: start_color_drag(e, 'font', globals_dict),
+    '<Button-3>': lambda e: start_color_drag(e, 'list_bg', globals_dict),
     '<Button-2>': lambda e: start_color_drag(e, 'frame_bg', globals_dict),
-    '<B1-Motion>': lambda e: None,  # Block left motion
-    '<B3-Motion>': lambda e: None,  # Block right motion
+    '<B1-Motion>': lambda e: update_color(e, text_editor, entry, treeview, style, globals_dict),
+    '<B3-Motion>': lambda e: update_color(e, text_editor, entry, treeview, style, globals_dict),
     '<B2-Motion>': lambda e: update_color(e, text_editor, entry, treeview, style, globals_dict),
     '<ButtonRelease-1>': lambda e: None,
     '<ButtonRelease-3>': lambda e: None,
@@ -229,12 +222,8 @@ color_events = {
 for event, func in color_events.items():
     color_button.bind(event, func)
 
-# Initial auth check after UI is set up
 globals_dict['root'].after(100, update_auth_button)
-
-root.deiconify()  # Show the window immediately
-
-# Schedule state initialization and repo status regeneration after UI is visible
+root.deiconify()
 root.after(50, lambda: set_initial_state(globals_dict))
 from logic import regenerate_repo_status
 root.after(100, lambda: regenerate_repo_status(globals_dict['entry'], globals_dict['treeview'], globals_dict['root']))
