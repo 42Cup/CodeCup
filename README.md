@@ -19,7 +19,7 @@ And grab these for good measure!
 - **Fedora**:  
   `sudo dnf install git gh -y`
 
-Now your all set to get Vibeyyy
+Now you're all set to get Vibeyyy
 
 ## 🤝 Contributing
 Feel free to fork, tweak, and enhance Code Cup ☕! 
